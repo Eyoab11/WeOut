@@ -16,6 +16,6 @@ TanStack Query manages remote state. Zustand is available for local UI state; Zo
 
 ## Scaffold boundaries
 
-All routes are preview placeholders. Auth API helpers are available, but forms, session-based routing and onboarding are not implemented. Navigation runs without backend credentials. The only implemented database domain is private profiles; other domains are planned in database.md. Edge Functions return 501.
+Welcome, onboarding, loading and account form UI is implemented. Other product routes remain placeholders. Auth API helpers are available, but form submission and session-based routing are not connected. Navigation runs without backend credentials. The only implemented database domain is private profiles; other domains are planned in database.md. Edge Functions return 501.
 
 Private media must use a private bucket and policies consistent with post visibility. Location sharing must be opt-in with server-enforced friend/selected-friend access. Clients must not award XP, verify accounts, create official quests or create matches without trusted validation.
