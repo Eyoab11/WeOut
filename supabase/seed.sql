@@ -1,0 +1,2 @@
+-- Add deterministic development fixtures as domain migrations are implemented.
+-- Auth users and personal data are intentionally not seeded.
