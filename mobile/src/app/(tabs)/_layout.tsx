@@ -1,13 +1,12 @@
 import { Tabs } from 'expo-router';
-
+import { AppTabBar } from '@/components/travel/AppTabBar';
 export default function TabLayout() {
-  return (
-    <Tabs screenOptions={{ tabBarActiveTintColor: '#22634B', headerStyle: { backgroundColor: '#F7F8F2' } }}>
-      <Tabs.Screen name="home" options={{ title: 'Home' }} />
-      <Tabs.Screen name="explore" options={{ title: 'Explore' }} />
-      <Tabs.Screen name="trips" options={{ title: 'Trips' }} />
-      <Tabs.Screen name="companions" options={{ title: 'Companions' }} />
-      <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
-    </Tabs>
-  );
+  return <Tabs tabBar={() => <AppTabBar />} screenOptions={{ headerShown: false }}>
+    <Tabs.Screen name="home" />
+    <Tabs.Screen name="explore" />
+    <Tabs.Screen name="trips" />
+    <Tabs.Screen name="profile" />
+    <Tabs.Screen name="companions" options={{ href: null }} />
+    <Tabs.Screen name="sidequests" options={{ href: null }} />
+  </Tabs>;
 }

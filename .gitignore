@@ -19,3 +19,5 @@ supabase/.branches/
 *.p8
 *.p12
 *.mobileprovision
+
+.quest-export/

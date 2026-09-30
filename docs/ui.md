@@ -15,7 +15,7 @@ Routes: /, /welcome, /onboarding, /login, /signup, /loading, /home.
 - Photography and the handwriting font are bundled locally, so they do not need a network request at runtime.
 - Auth forms use Zod validation, field-specific errors, password visibility controls, and keyboard-aware scrolling.
 
-This is a UI pass. No sign-in, signup, OAuth or recovery requests are sent. Valid submissions explain the preview state; no account or authenticated session is fabricated. Terms/privacy dialogs are explicitly pending policies, not legal agreements. The existing Supabase helpers are unchanged.
+Sign-in and sign-up now redirect to Home in preview mode, and use real Supabase Auth when configured. See travel-ui.md for confirmation and error behavior. OAuth and recovery remain preview-only; policies remain draft placeholders.
 
 The native splash configuration takes effect in a new development/production build. Expo Go controls its own native launch screen; the full-screen mountain welcome is visible in Expo Go after launch.
 

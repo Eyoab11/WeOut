@@ -1,0 +1,50 @@
+﻿import { PGlite } from '@electric-sql/pglite';
+import { readFileSync } from 'node:fs';
+import assert from 'node:assert/strict';
+const db = new PGlite();
+const a='11111111-1111-4111-8111-111111111111', b='22222222-2222-4222-8222-222222222222';
+await db.exec(`create role anon; create role authenticated;
+create schema auth; create schema storage;
+create table auth.users(id uuid primary key, raw_user_meta_data jsonb);
+create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
+create table public.profiles(id uuid primary key,display_name text);
+create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
+create table storage.objects(id serial primary key,bucket_id text,name text,metadata jsonb);
+alter table storage.objects enable row level security;
+grant usage on schema public,auth,storage to authenticated,anon;
+grant select,insert,delete on storage.objects to authenticated;
+grant usage on sequence storage.objects_id_seq to authenticated;
+insert into auth.users values('${a}','{"display_name":"A traveler"}'),('${b}','{"display_name":"B traveler"}');`);
+await db.exec(readFileSync(new URL('../supabase/migrations/20260909000100_quest_progress.sql',import.meta.url),'utf8'));
+async function asUser(id) { await db.exec(`reset role; set role authenticated; set request.jwt.claim.sub='${id}';`); }
+async function dashboard(){return (await db.query('select public.quest_dashboard() as result')).rows[0].result;}
+async function upload(id,path){await asUser(id);await db.query(`insert into storage.objects(bucket_id,name,metadata) values('quest-evidence',$1,'{"mimetype":"image/jpeg","size":100}')`,[path]);}
+async function publish(id,path,quest=null){return db.query('select public.quest_publish_photo($1,$2,$3,$4,$5)',[id,'My own adventure photo','Nairobi',path,quest]);}
+await asUser(a); const first=await dashboard();
+await db.query('select public.quest_join($1)',[first.daily.id]);
+await asUser(b); assert.equal((await dashboard()).daily.id,first.daily.id);
+await db.query('select public.quest_join($1)',[first.daily.id]);
+assert.equal((await dashboard()).participant_count,2);
+await assert.rejects(()=>db.exec(`insert into public.activity_days values('${b}',current_date)`),/permission denied/);
+await assert.rejects(()=>db.exec(`insert into public.quest_completions values('${b}','sunrise','fake',now())`),/permission denied/);
+await assert.rejects(()=>publish('missing-photo',b+'/missing.jpg',first.daily.id),/Upload a JPEG/);
+await upload(a,a+'/quest-photo.jpg');
+await publish('quest-photo',a+'/quest-photo.jpg',first.daily.id);
+await publish('quest-photo',a+'/quest-photo.jpg',first.daily.id);
+let result=await dashboard(); assert.equal(result.days.length,1); assert.equal(result.posts.length,1); assert.equal(result.completed[first.daily.id],'quest-photo');
+await upload(a,a+'/second-photo.jpg');
+await assert.rejects(()=>publish('second-photo',a+'/second-photo.jpg',first.daily.id),/already completed/);
+assert.equal((await dashboard()).posts.length,1);
+await publish('travel-photo',a+'/second-photo.jpg');
+assert.equal((await dashboard()).days.length,1);
+await asUser(b); assert.deepEqual((await db.query('select * from public.activity_days')).rows,[]);
+assert.equal((await dashboard()).participants.filter(p=>p.completed).length,1);
+await assert.rejects(()=>publish('foreign-photo',a+'/quest-photo.jpg'),/own uploaded photo/);
+await assert.rejects(()=>db.query(`insert into storage.objects(bucket_id,name,metadata) values('quest-evidence',$1,'{}')`,[a+'/foreign.jpg']),/row-level security/);
+await assert.rejects(()=>db.exec(`insert into public.quest_catalog(id,title,description,category,minutes,xp,kind,creator_id) values('builtin-fake','Fake quest','A fake built in quest','Nature',20,100,'builtin','${b}')`),/row-level security/);
+await db.exec(`insert into public.quest_catalog(id,title,description,category,minutes,xp,kind,creator_id) values('custom-test','Find a tree','Find a tree and photograph it','Nature',20,100,'custom','${b}')`);
+await asUser(a); assert.ok((await dashboard()).catalog.some(q=>q.id==='custom-test'));
+await db.exec(`reset role; insert into public.quest_catalog(id,title,description,category,minutes,xp,kind,daily_day) values('daily-2000-01-01','Old challenge','An old challenge for testing','Nature',20,100,'daily','2000-01-01');`);
+await asUser(a); await assert.rejects(()=>db.query('select public.quest_join($1)',['daily-2000-01-01']),/ended/);
+await db.exec('reset role; set role anon;'); await assert.rejects(()=>dashboard(),/permission denied/);
+await db.close(); console.log('PASS: shared daily participants, private progress, photo enforcement, idempotency, atomic completion, catalog RLS, expired quests and anonymous access');

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,11 +9,17 @@ import { ActionButton } from '@/components/ui/ActionButton';
 import { FormField } from '@/components/ui/FormField';
 import { colors } from '@/constants/theme';
 import { signInSchema, signUpSchema } from './validation';
+import { authenticateAccount } from './accountFlow';
+import { supabase } from '@/lib/supabase';
+import { useTravelStore } from '@/stores/useTravelStore';
 import { styles as s } from './auth.styles';
 
 export default function AuthScreen({ mode }: { mode: 'signin' | 'signup' }) {
   const signup = mode === 'signup';
   const router = useRouter();
+  const enter = useTravelStore(s => s.enter);
+  const [busy, setBusy] = useState(false);
+  const submitting = useRef(false);
   const [values, setValues] = useState({ fullName: '', email: '', username: '', password: '' });
   const [checked, setChecked] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -26,15 +32,32 @@ export default function AuthScreen({ mode }: { mode: 'signin' | 'signup' }) {
     setErrors(previous => ({ ...previous, [field]: '' }));
     setNotice('');
   };
-  function submit() {
+  async function submit() {
+    if (submitting.current) return;
     const result = (signup ? signUpSchema : signInSchema).safeParse({ ...values, email: values.email.trim(), agreed: checked });
     if (!result.success) {
       setErrors(Object.fromEntries(result.error.issues.map(issue => [String(issue.path[0]), issue.message])));
       setNotice('');
       return;
     }
+    submitting.current = true;
+    setBusy(true);
     setErrors({});
-    setNotice('You’re viewing an early preview. Your details haven’t been submitted. Take a look around while we get accounts ready.');
+    setNotice('');
+    try {
+      const account = await authenticateAccount(supabase, signup, values);
+      if (account.kind === 'confirmation') {
+        setNotice(signup ? 'Check your email to confirm your account, then come back and sign in.' : 'Finish signing in to continue.');
+        return;
+      }
+      enter(account.name, account.username, account.preview, account.userId);
+      router.replace('/home');
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Something went wrong. Please try again.');
+    } finally {
+      submitting.current = false;
+      setBusy(false);
+    }
   }
   function openModal(value: typeof modal) { setResetFeedback(''); setModal(value); }
   return <SafeAreaView style={s.page}>
@@ -56,13 +79,13 @@ export default function AuthScreen({ mode }: { mode: 'signin' | 'signup' }) {
               autoComplete={signup ? 'new-password' : 'current-password'} error={errors.password} returnKeyType="done" onSubmitEditing={submit} />
           </View>
           <View style={s.options}>
-            <Pressable accessibilityRole="checkbox" accessibilityState={{ checked }} accessibilityLabel={signup ? 'Agree to the terms and privacy policy' : 'Remember me'}
+            {(signup || !supabase) && <Pressable accessibilityRole="checkbox" accessibilityState={{ checked }} accessibilityLabel={signup ? 'Agree to the terms and privacy policy' : 'Remember me'}
               onPress={() => { setChecked(!checked); setErrors(previous => ({ ...previous, agreed: '' })); }} style={s.checkboxRow}>
               <View style={[s.checkbox, checked && { backgroundColor: colors.leaf, borderColor: colors.leaf }]}>
                 {checked && <Feather name="check" size={11} color="white" />}
               </View>
               <Text style={s.optionText}>{signup ? 'I agree to the' : 'Remember me'}</Text>
-            </Pressable>
+            </Pressable>}
             {signup ? <View style={s.legalLinks}>
               <Pressable onPress={() => openModal('terms')} accessibilityRole="button" style={s.inlineLink}><Text style={s.linkSmall}>Terms of Service</Text></Pressable>
               <Text style={s.optionText}>and</Text>
@@ -70,7 +93,8 @@ export default function AuthScreen({ mode }: { mode: 'signin' | 'signup' }) {
             </View> : <Pressable accessibilityRole="button" style={s.inlineLink} onPress={() => openModal('forgot')}><Text style={s.linkSmall}>Forgot password?</Text></Pressable>}
           </View>
           {!!errors.agreed && <Text accessibilityLiveRegion="polite" style={s.error}>{errors.agreed}</Text>}
-          <ActionButton label={signup ? 'Create Account' : 'Sign In'} onPress={submit} />
+          {!supabase && <Text style={[s.optionText, { marginBottom: 12 }]}>Preview mode · no account is created or credentials sent.</Text>}
+          <ActionButton label={busy ? 'Please wait…' : !supabase ? (signup ? 'Preview Sign Up' : 'Preview Sign In') : signup ? 'Create Account' : 'Sign In'} disabled={busy} onPress={submit} />
           {!!notice && <View style={s.notice} accessibilityLiveRegion="polite"><Text style={s.noticeText}>{notice}</Text></View>}
           <View style={s.divider}><View style={s.line} /><Text style={s.dividerText}>or continue with</Text><View style={s.line} /></View>
           <View style={s.socials}>

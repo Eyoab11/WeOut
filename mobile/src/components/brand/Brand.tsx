@@ -4,12 +4,7 @@ import { colors } from '@/constants/theme';
 
 export function Brand({ small = false }: { small?: boolean }) {
   return <View accessible accessibilityLabel="WeOut. Places, people, purpose." style={styles.brand}>
-    <Svg width={small ? 66 : 92} height={small ? 42 : 58} viewBox="0 0 100 62">
-      <Path d="M3 58 43 3 65 39 48 29 28 54Z" fill="#116343" />
-      <Path d="m43 3 8 28-8-7-15 30 20-25 17 10Z" fill="#3E896A" />
-      <Path d="m49 57 25-46 25 47-19-7-7-17-13 25Z" fill="#80AB94" />
-      <Path d="m49 57 14-28 10 5 7 17-16-11Z" fill="#286F50" />
-    </Svg>
+    <MountainMark width={small ? 66 : 92} />
     <Text style={[styles.name, small && { fontSize: 30, lineHeight: 33 }]}>WeOut</Text>
     <Text style={[styles.tag, small && { fontSize: 6, letterSpacing: 2.5 }]}>PLACES  PEOPLE  PURPOSE</Text>
   </View>;
@@ -30,3 +25,10 @@ export function MountainFooter() {
     </Svg>
   </View>;
 }
+
+export function MountainMark({ width = 50 }: { width?: number }) { return (    <Svg width={width} height={width * 0.63} viewBox="0 0 100 62">
+      <Path d="M3 58 43 3 65 39 48 29 28 54Z" fill="#116343" />
+      <Path d="m43 3 8 28-8-7-15 30 20-25 17 10Z" fill="#3E896A" />
+      <Path d="m49 57 25-46 25 47-19-7-7-17-13 25Z" fill="#80AB94" />
+      <Path d="m49 57 14-28 10 5 7 17-16-11Z" fill="#286F50" />
+    </Svg>); }

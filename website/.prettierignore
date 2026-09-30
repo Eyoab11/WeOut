@@ -1,0 +1,5 @@
+src/lib/quest-model.ts
+node_modules
+.next
+out
+package-lock.json

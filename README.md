@@ -77,10 +77,14 @@ npm run check:expo
 
 ## Current scope
 
-Designed welcome, onboarding, loading and account screens; remaining product screens are scaffolds. Supabase client/session refresh, auth API helpers, query provider, private profile migration, PostGIS and Edge Function placeholders are included. Product features and the rest of the database are planned, not implemented. No hosted backend has been created or deployed.
+Designed welcome, onboarding, loading, account, Home, Explore, SideQuests, Trips, Companion Finder and Profile screens with shared preview interactions. Supabase client/session refresh, auth API helpers, query provider, private profile migration, PostGIS and Edge Function placeholders are included. Product features and the rest of the database are planned, not implemented. No hosted backend has been created or deployed.
 
 See [architecture](docs/architecture.md) and [database plan](docs/database.md). App identity: `WeOut`, slug/scheme `weout`, bundle/package `com.weout.app`.
 
 See [verification notes](docs/verification.md) for completed checks and known dependency advisories.
 
 See [welcome and account UI](docs/ui.md) for the preview flow and implementation details.
+
+See [travel screens and auth behavior](docs/travel-ui.md) for the new pages, Home redirects, and preview data boundaries.
+
+SideQuest creation, daily challenges, photo proof, streaks, and backend setup: [SideQuests guide](docs/sidequests.md).
